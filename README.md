@@ -73,7 +73,7 @@ python seeds.py "Pepper" "Jalapeño" \
 - `--notes` - Additional notes about the seed
 - `--sow-start` - Month to start sowing (e.g., "Mar", "March")
 - `--sow-end` - Month to end sowing (e.g., "Jul", "July")
-- `--month` - Month number (1-12) for this seed entry
+- `--month` - Month as 3-character abbreviation (e.g., "Jan", "Feb", "Mar", "Nov", "Dec") for this seed entry
 - `--year` - Year for this seed entry
 
 ### Printer Configuration

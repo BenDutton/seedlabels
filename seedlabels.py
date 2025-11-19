@@ -158,25 +158,18 @@ def generate_seed_label(name, variety, notes="", sow_start_month=None, sow_end_m
     if sow_start_month or sow_end_month:
         # Place the sow month below the variety
         sow_y = current_y
-        sow_label = "Sow:"
-
-        # Build the months string depending on what's provided
+        
+        # Build the sow information string
         if sow_start_month and sow_end_month:
-            months_text = f"{sow_start_month} — {sow_end_month}"
+            sow_text = f"Sow: {sow_start_month} — {sow_end_month}"
         elif sow_start_month:
-            months_text = f"{sow_start_month}"
+            sow_text = f"Sow: {sow_start_month}"
         else:
-            # Only end provided, label as End:
-            sow_label = "End:"
-            months_text = f"{sow_end_month}"
+            # Only end provided
+            sow_text = f"Sow End: {sow_end_month}"
 
-        # Measure label width so months can be positioned after it
-        label_bbox = draw.textbbox((0, 0), sow_label + " ", font=font_sow_bold)
-        label_w = label_bbox[2] - label_bbox[0]
-
-        # Draw the label (bold) and the months (smaller black)
-        draw.text((padding_left, sow_y), sow_label + " ", fill="black", font=font_sow_bold)
-        draw.text((padding_left + label_w, sow_y), months_text, fill="black", font=font_sow_italic)
+        # Draw the entire sow line in a readable font
+        draw.text((padding_left, sow_y), sow_text, fill="black", font=font_sow_bold)
 
         notes_y = current_y + line_spacing + 5  # Extra spacing before notes
     else:

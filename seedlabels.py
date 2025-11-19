@@ -57,7 +57,7 @@ def wrap_text(text, font, max_width, draw):
     return lines
 
 
-def generate_seed_label(name, variety, notes="", sow_start_month=None, sow_end_month=None, month=None, year=None):
+def generate_seed_label(name, variety, notes="", sow_start_month=None, sow_end_month=None, month=None, year=None, use_red=False):
     """
     Generate a seed label image
     
@@ -67,8 +67,9 @@ def generate_seed_label(name, variety, notes="", sow_start_month=None, sow_end_m
         notes: Additional notes (e.g., "Heirloom variety")
         sow_start_month: Optional string for month to start/sow the seeds (e.g., "Oct" or "October")
         sow_end_month: Optional string for month to end sowing (e.g., "Dec" or "December")
-        month: Optional integer (1-12) representing the month for this seed entry
+        month: Optional three-letter month name for this seed entry (e.g., "Jan", "Feb", "Mar")
         year: Optional integer representing the year for this seed entry
+        use_red: Whether to print the seed name in red (default: False)
     
     Returns:
         PIL Image object of the generated label
@@ -104,12 +105,12 @@ def generate_seed_label(name, variety, notes="", sow_start_month=None, sow_end_m
     
     for bold_path, regular_path, italic_path, mono_path in font_paths:
         try:
-            font_bold = ImageFont.truetype(bold_path, 34)
-            font_regular = ImageFont.truetype(bold_path, 22)
-            font_italic = ImageFont.truetype(bold_path, 20)
-            font_small = ImageFont.truetype(bold_path, 16)
-            font_sow_bold = ImageFont.truetype(bold_path, 16)
-            font_sow_italic = ImageFont.truetype(bold_path, 16)
+            font_bold = ImageFont.truetype(bold_path, 48)  # Larger main title
+            font_regular = ImageFont.truetype(regular_path, 32)  # Larger variety text
+            font_italic = ImageFont.truetype(italic_path, 24)  # Larger notes
+            font_small = ImageFont.truetype(regular_path, 20)  # Larger date
+            font_sow_bold = ImageFont.truetype(bold_path, 22)  # Larger sow label
+            font_sow_italic = ImageFont.truetype(regular_path, 22)  # Larger sow months
             font_mono = ImageFont.truetype(mono_path, 18)
             font_loaded_from = bold_path
             print(f"Successfully loaded fonts from: {bold_path}")
@@ -133,16 +134,17 @@ def generate_seed_label(name, variety, notes="", sow_start_month=None, sow_end_m
     # No QR code for CLI version, use full label width for text
     text_area_width = label_width - 40
     padding_left = 20
-    padding_top = 12
-    line_spacing = 42
-    notes_line_height = 20  # separate line height tuned to notes font
+    padding_top = 15
+    line_spacing = 50  # Increased spacing between lines
+    notes_line_height = 28  # Increased spacing for notes
 
     # Draw seed name in bold with wrapping
     max_name_width = text_area_width - padding_left
     wrapped_name = wrap_text(name, font_bold, max_name_width, draw)
     current_y = padding_top
+    name_color = "red" if use_red else "black"
     for line in wrapped_name:
-        draw.text((padding_left, current_y), line, fill="black", font=font_bold)
+        draw.text((padding_left, current_y), line, fill=name_color, font=font_bold)
         current_y += line_spacing
 
     # Draw variety in standard font with wrapping
@@ -176,7 +178,7 @@ def generate_seed_label(name, variety, notes="", sow_start_month=None, sow_end_m
         draw.text((padding_left, sow_y), sow_label + " ", fill="black", font=font_sow_bold)
         draw.text((padding_left + label_w, sow_y), months_text, fill="black", font=font_sow_italic)
 
-        notes_y = current_y + line_spacing
+        notes_y = current_y + line_spacing + 5  # Extra spacing before notes
     else:
         notes_y = current_y
     
@@ -194,10 +196,8 @@ def generate_seed_label(name, variety, notes="", sow_start_month=None, sow_end_m
     
     # Draw date above branding at bottom (only if month and year are provided)
     if month is not None and year is not None:
-        month_names = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-        if 1 <= month <= 12:
-            date_str = f"{month_names[month]}-{year}"
-            draw.text((padding_left, label_height - 45), date_str, fill="black", font=font_small)
+        date_str = f"{month}-{year}"
+        draw.text((padding_left, label_height - 45), date_str, fill="black", font=font_small)
     
     return img
 
@@ -283,8 +283,8 @@ Examples:
                        help="Month to start sowing (e.g., 'Mar', 'March')")
     parser.add_argument("--sow-end", dest="sow_end_month", 
                        help="Month to end sowing (e.g., 'Jul', 'July')")
-    parser.add_argument("--month", type=int, 
-                       help="Month number (1-12) for this seed entry")
+    parser.add_argument("--month", 
+                       help="Three-letter month name for this seed entry (e.g., 'Jan', 'Feb', 'Mar')")
     parser.add_argument("--year", type=int, 
                        help="Year for this seed entry")
     
@@ -303,9 +303,11 @@ Examples:
     args = parser.parse_args()
     
     # Validate month if provided
-    if args.month is not None and not (1 <= args.month <= 12):
-        print("Error: Month must be between 1 and 12")
-        sys.exit(1)
+    valid_months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    if args.month is not None:
+        if args.month not in valid_months:
+            print(f"Error: Month must be one of: {', '.join(valid_months)}")
+            sys.exit(1)
     
     print(f"Generating label for: {args.name} - {args.variety}")
     if args.notes:
@@ -318,8 +320,7 @@ Examples:
             sow_info.append(f"End: {args.sow_end_month}")
         print(f"Sowing: {', '.join(sow_info)}")
     if args.month and args.year:
-        month_names = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-        print(f"Date: {month_names[args.month]}-{args.year}")
+        print(f"Date: {args.month}-{args.year}")
     
     # Generate the label
     try:
@@ -330,7 +331,8 @@ Examples:
             sow_start_month=args.sow_start_month,
             sow_end_month=args.sow_end_month,
             month=args.month,
-            year=args.year
+            year=args.year,
+            use_red=args.red
         )
         
         if args.dry_run:
